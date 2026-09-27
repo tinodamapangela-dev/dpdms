@@ -1,0 +1,20 @@
+package zw.ac.uz.dpdms.auth.domain;
+
+public enum Role {
+    FLOOD_RECORDER, DROUGHT_RECORDER, FIRE_RECORDER,
+    ZOONOTIC_RECORDER, MINING_RECORDER,
+    FLOOD_SUPERVISOR, DROUGHT_SUPERVISOR, FIRE_SUPERVISOR,
+    ZOONOTIC_SUPERVISOR, MINING_SUPERVISOR,
+    PROVINCIAL_ADMIN, NATIONAL_USER;
+
+    public String hazard() {
+        return switch (this) {
+            case FLOOD_RECORDER, FLOOD_SUPERVISOR -> "FLOOD";
+            case DROUGHT_RECORDER, DROUGHT_SUPERVISOR -> "DROUGHT";
+            case FIRE_RECORDER, FIRE_SUPERVISOR -> "FIRE";
+            case ZOONOTIC_RECORDER, ZOONOTIC_SUPERVISOR -> "ZOONOTIC_DISEASE";
+            case MINING_RECORDER, MINING_SUPERVISOR -> "MINING_ACCIDENT";
+            default -> null;
+        };
+    }
+}

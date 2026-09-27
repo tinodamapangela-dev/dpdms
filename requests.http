@@ -1,0 +1,26 @@
+### Login as Flood Recorder (Ward A)
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "username": "flood.recorder.wardA",
+  "password": "password"
+}
+
+### Login as Flood Supervisor
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "username": "flood.supervisor",
+  "password": "password"
+}
+
+### Login as National User (read-only)
+POST http://localhost:8081/auth/login
+Content-Type: application/json
+
+{
+  "username": "national.user",
+  "password": "password"
+}

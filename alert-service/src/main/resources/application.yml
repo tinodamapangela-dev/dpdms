@@ -1,0 +1,46 @@
+server:
+  port: 8088
+spring:
+  application:
+    name: alert-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/alert_db
+    username: dpdms
+    password: dpdms
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${EMAIL_USERNAME:}
+    password: ${EMAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+whatsapp:
+  token: ${WHATSAPP_API_TOKEN:}
+  phoneId: ${WHATSAPP_PHONE_NUMBER_ID:}
+alerts:
+  email.coordinator: ${COORDINATOR_EMAIL:coordinator@dpdms.local}
+  whatsapp.ops: ${OPS_WHATSAPP:+263000000000}
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
