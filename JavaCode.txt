@@ -1,0 +1,510 @@
+#MEMBER CLASS
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.Scanner;
+
+public abstract class Member {
+    protected String fullname;
+    protected Department department;
+    protected LocalDate joiningDate;
+    protected Account account;
+    protected double joiningFee;
+    protected boolean quit;
+    protected double interestRate;
+    protected SportingActivity sportingActivity;
+
+    public Member(String fullname, Department department, LocalDate joiningDate, Account account, SportingActivity sportingActivity) {
+        this.fullname = fullname;
+        this.department = department;
+        this.joiningDate = joiningDate;
+        this.account = account;
+        this.sportingActivity = sportingActivity;
+        this.joiningFee = 100.00;
+        this.quit = false;
+        this.interestRate = 0.01; // 1%
+    }
+
+    // i. Register a member
+    public void register() {
+        try (PrintWriter out = new PrintWriter(new FileWriter("members.txt", true))) {
+            out.println(this.toString());
+            System.out.println("Member registered successfully.");
+        } catch (IOException e) {
+            System.err.println("Error writing to members.txt: " + e.getMessage());
+        }
+    }
+
+    // ii. Print details to console
+    public void print() {
+        System.out.println("--- Member Details ---");
+        System.out.println(this.toString());
+        System.out.println("Outstanding Balance: $" + String.format("%.2f", account.getBalance()));
+        System.out.println("----------------------");
+    }
+
+    // iii. Compare two members for equality
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Member member = (Member) obj;
+        return fullname.equals(member.fullname) &&
+                joiningDate.equals(member.joiningDate) &&
+                account.getAccountNumber().equals(member.account.getAccountNumber());
+    }
+
+    // iv. Read details from keyboard
+    public void read() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter Fullname: ");
+        this.fullname = scanner.nextLine();
+
+        System.out.print("Enter Department Name: ");
+        String deptName = scanner.nextLine();
+        this.department = new Department(deptName);
+
+        System.out.print("Enter Joining Date (YYYY-MM-DD): ");
+        String dateStr = scanner.nextLine();
+        this.joiningDate = LocalDate.parse(dateStr);
+
+        System.out.print("Enter Account Number: ");
+        String accNum = scanner.nextLine();
+        this.account = new Account(accNum);
+
+        System.out.print("Enter Sporting Activity Name: ");
+        String sportName = scanner.nextLine();
+        System.out.print("Enter Sporting Activity Coordinator: ");
+        String coordinator = scanner.nextLine();
+        this.sportingActivity = new SportingActivity(sportName, coordinator);
+    }
+
+    // v. Clone a member
+    public abstract Member clone();
+
+    // vi. Calculate outstanding balance for a member who has not quit
+    public double liveBalance() {
+        if (quit) return 0;
+
+        LocalDate today = LocalDate.now();
+        long daysSinceJoining = ChronoUnit.DAYS.between(joiningDate, today);
+
+        double annualSubscription = 10.00;
+        long yearsPassed = daysSinceJoining / 365;
+
+        double expectedSubscriptions = annualSubscription * (yearsPassed + 1);
+        double totalPaid = 0;
+        for (Payment p : account.getPayments()) {
+            totalPaid += p.getAmount();
+        }
+
+        double outstanding = expectedSubscriptions - totalPaid;
+
+        if (outstanding > 0 && daysSinceJoining > 365) {
+            double interest = Account.calculateInterest(outstanding, (int)(daysSinceJoining - 365));
+            outstanding += (interest - outstanding);
+        }
+
+        return Math.max(0, outstanding);
+    }
+
+    // vii. Calculate outstanding balance for a member who has quit
+    public double terminalBalance() {
+        if (!quit) return 0;
+
+        double outstandingSubs = liveBalance();
+        double refund = 0;
+        double totalPaid = 0;
+        for (Payment p : account.getPayments()) {
+            totalPaid += p.getAmount();
+        }
+
+        if (totalPaid >= (joiningFee + outstandingSubs)) {
+            refund = joiningFee * 0.30;
+        }
+
+        double finalBalance = outstandingSubs - refund;
+        return finalBalance;
+    }
+
+    // viii. Print statement to a file
+    public void fileprint() {
+        String fileName = fullname.replaceAll("\\s", "") + ".txt";
+        try (PrintWriter out = new PrintWriter(new FileWriter(fileName))) {
+            out.println("=========================================");
+            out.println("       UNIVERSITY OF ZIMBABWE            ");
+            out.println("       SPORTS MEMBERSHIP STATEMENT       ");
+            out.println("=========================================");
+            out.println("Member Name: " + fullname);
+            out.println("Department: " + department.getName());
+            out.println("Joining Date: " + joiningDate);
+            out.println("Account Number: " + account.getAccountNumber());
+            out.println("Sporting Activity: " + sportingActivity.toString());
+            out.println("-----------------------------------------");
+            out.println("Transactions:");
+            for (Payment p : account.getPayments()) {
+                out.println("  " + p.toString());
+            }
+            out.println("-----------------------------------------");
+            out.println("Outstanding Balance: $" + String.format("%.2f", liveBalance()));
+            out.println("=========================================");
+            System.out.println("Statement printed to " + fileName);
+        } catch (IOException e) {
+            System.err.println("Error writing statement file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String toString() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        return "Type: " + this.getClass().getSimpleName() +
+                " | Name: " + fullname +
+                " | Dept: " + department.getName() +
+                " | Joined: " + joiningDate.format(formatter) +
+                " | Account: " + account.getAccountNumber() +
+                " | Sport: " + sportingActivity.getName();
+    }
+
+    // --- Getters needed for queries ---
+    public LocalDate getJoiningDate() { return joiningDate; }
+    public void setQuit(boolean quit) { this.quit = quit; }
+    public Account getAccount() { return account; }
+
+    // THIS METHOD FOR THE QUERIES
+    public String getFullname() { return fullname; }
+}
+
+
+
+#STAFF CLASS
+
+
+import java.time.LocalDate;
+import java.util.Scanner;
+
+public class Staff extends Member {
+    private String ecNumber;
+
+    public Staff(String fullname, Department department, LocalDate joiningDate, Account account, SportingActivity sportingActivity, String ecNumber) {
+        super(fullname, department, joiningDate, account, sportingActivity);
+        this.ecNumber = ecNumber;
+    }
+
+    public String getEcNumber() { return ecNumber; }
+    public void setEcNumber(String ecNumber) { this.ecNumber = ecNumber; }
+
+    @Override
+    public Member clone() {
+        Staff cloned = new Staff(this.fullname, this.department, this.joiningDate,
+                new Account(this.account.getAccountNumber()),
+                this.sportingActivity, this.ecNumber);
+        cloned.account.setBalance(this.account.getBalance());
+        return cloned;
+    }
+
+    @Override
+    public void read() {
+        super.read();
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter Staff EC Number: ");
+        this.ecNumber = scanner.nextLine();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " | EC#: " + ecNumber;
+    }
+}
+
+
+#ACCOUNT CLASS
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Account {
+    private String accountNumber;
+    private List<Payment> payments;
+    private double balance; // Represents the outstanding subscription balance
+
+    public Account(String accountNumber) {
+        this.accountNumber = accountNumber;
+        this.payments = new ArrayList<>();
+        this.balance = 0.0;
+    }
+
+    public void addPayment(Payment payment) {
+        this.payments.add(payment);
+        // Assuming payments made reduce the outstanding balance
+        this.balance -= payment.getAmount();
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+
+    public void setBalance(double balance) {
+        this.balance = balance;
+    }
+
+    public List<Payment> getPayments() {
+        return payments;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    // Formula: A = P(1 + r/n)^(nt)
+    public static double calculateInterest(double amount, int days) {
+        double principal = amount;
+        double rate = 0.01; // 1% annual interest
+        int n = 12; // Compounded monthly
+        double t = days / 365.25; // Time in years
+
+        return principal * Math.pow((1 + (rate / n)), (n * t));
+    }
+}
+
+
+#PAYMENT CLASS
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+public class Payment {
+    private LocalDate dateOfPayment;
+    private double amount;
+
+    public Payment(LocalDate dateOfPayment, double amount) {
+        this.dateOfPayment = dateOfPayment;
+        this.amount = amount;
+    }
+
+    public LocalDate getDate() {
+        return dateOfPayment;
+    }
+
+    public double getAmount() {
+        return amount;
+    }
+
+    @Override
+    public String toString() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        return "Date: " + dateOfPayment.format(formatter) + " | Amount: $" + String.format("%.2f", amount);
+    }
+}
+
+
+
+#SPORTING ACTIVITY
+
+public class SportingActivity {
+    private String name;
+    private String coordinator;
+
+    public SportingActivity(String name, String coordinator) {
+        this.name = name;
+        this.coordinator = coordinator;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getCoordinator() {
+        return coordinator;
+    }
+
+    public void setCoordinator(String coordinator) {
+        this.coordinator = coordinator;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (Coordinator: " + coordinator + ")";
+    }
+}
+
+
+
+
+
+#DEPARTMENT CLASS
+
+
+public class Department {
+    private String name;
+
+    public Department(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+
+
+
+#MEMBER TEST CLASS
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MemberTest {
+
+    public static void main(String[] args) {
+        // ix. Create objects based on Table 1
+        // Member 1: Student
+        Department csDept = new Department("CS");
+        SportingActivity soccer = new SportingActivity("Soccer", "Nestai Muroiwa");
+        Account acc1 = new Account("ACC001");
+
+        acc1.addPayment(new Payment(LocalDate.of(2012, 10, 21), 80.00));
+        acc1.addPayment(new Payment(LocalDate.of(2013, 8, 23), 4.50));
+        acc1.addPayment(new Payment(LocalDate.of(2014, 10, 13), 12.50));
+
+        Student student1 = new Student("Kurauone Daindakaziva", csDept, LocalDate.of(2012, 10, 21), acc1, soccer, "r002019x");
+
+        // Member 2: Staff
+        Department mthDept = new Department("MTH");
+        SportingActivity tennis = new SportingActivity("Tennis", "Dambudzo Munonditei");
+        Account acc2 = new Account("ACC002");
+
+        acc2.addPayment(new Payment(LocalDate.of(2011, 11, 13), 100.00));
+        acc2.addPayment(new Payment(LocalDate.of(2012, 12, 13), 10.00));
+        acc2.addPayment(new Payment(LocalDate.of(2013, 11, 14), 12.50));
+
+        Staff staff1 = new Staff("Tofirei Kufakunesu", mthDept, LocalDate.of(2011, 11, 13), acc2, tennis, "84946");
+
+        // ix. Call methods
+        System.out.println("=== Calling Methods for Student 1 ===");
+        student1.print();
+        student1.register();
+        System.out.println("Live Balance: $" + String.format("%.2f", student1.liveBalance()));
+        System.out.println("Terminal Balance: $" + String.format("%.2f", student1.terminalBalance()));
+        student1.fileprint();
+
+        System.out.println("\n=== Calling Methods for Staff 1 ===");
+        staff1.print();
+        staff1.register();
+        System.out.println("Live Balance: $" + String.format("%.2f", staff1.liveBalance()));
+        System.out.println("Terminal Balance: $" + String.format("%.2f", staff1.terminalBalance()));
+        staff1.fileprint();
+
+        // d. Perform Queries
+        // Putting members into a list for easier querying
+        List<Member> allMembers = new ArrayList<>();
+        allMembers.add(student1);
+        allMembers.add(staff1);
+
+        performQueries(allMembers);
+    }
+
+    // d. Queries implementation
+    public static void performQueries(List<Member> members) {
+        // Using PrintWriter to send results to database.txt as requested
+        try (PrintWriter out = new PrintWriter(new FileWriter("database.txt"))) {
+
+            out.println("=== UNIVERSITY OF ZIMBABWE SPORTS DATABASE QUERIES ===");
+            out.println("-------------------------------------------------------");
+
+            // ---------------------------------------------------------
+            // i. List the total number of members who joined in 2011.
+            // ---------------------------------------------------------
+            int count2011 = 0;
+            for (Member m : members) {
+                // Check if the year of the joining date is 2011
+                if (m.getJoiningDate().getYear() == 2011) {
+                    count2011++;
+                }
+            }
+            out.println("Query i: Total number of members who joined in 2011: " + count2011);
+            out.println("-------------------------------------------------------");
+
+            // ---------------------------------------------------------
+            // ii. List all members who have not paid the joining fee in full.
+            // ---------------------------------------------------------
+            out.println("Query ii: Members who have NOT paid the joining fee in full ($100.00):");
+
+            for (Member m : members) {
+                double totalPaid = 0;
+
+                // Sum up all payments made in the member's account
+                for (Payment p : m.getAccount().getPayments()) {
+                    totalPaid += p.getAmount();
+                }
+
+                // If total paid is less than the required $100 joining fee
+                if (totalPaid < 100.00) {
+                    out.println(" - " + m.getFullname() + " (Total Paid: $" + String.format("%.2f", totalPaid) + ")");
+                }
+            }
+
+            out.println("-------------------------------------------------------");
+            System.out.println("Queries executed successfully. Results saved to database.txt");
+
+        } catch (IOException e) {
+            System.err.println("Error writing database.txt: " + e.getMessage());
+        }
+    }
+}
+
+
+#STUDENT CLASS
+
+
+import java.time.LocalDate;
+import java.util.Scanner;
+
+public class Student extends Member {
+    private String regNumber;
+
+    public Student(String fullname, Department department, LocalDate joiningDate, Account account, SportingActivity sportingActivity, String regNumber) {
+        super(fullname, department, joiningDate, account, sportingActivity);
+        this.regNumber = regNumber;
+    }
+
+    public String getRegNumber() { return regNumber; }
+    public void setRegNumber(String regNumber) { this.regNumber = regNumber; }
+
+    @Override
+    public Member clone() {
+        Student cloned = new Student(this.fullname, this.department, this.joiningDate,
+                new Account(this.account.getAccountNumber()),
+                this.sportingActivity, this.regNumber);
+        cloned.account.setBalance(this.account.getBalance());
+        return cloned;
+    }
+
+    @Override
+    public void read() {
+        super.read();
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter Student Reg Number: ");
+        this.regNumber = scanner.nextLine();
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " | Reg#: " + regNumber;
+    }
+}
+
+
+

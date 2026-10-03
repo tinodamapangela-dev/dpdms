@@ -57,5 +57,13 @@ export default function App() {
         </Routes>
       </div>
     </>
+      <footer style={{
+        textAlign: "center", padding: "24px 16px", color: "#8b94a7",
+        fontSize: 12, marginTop: 40, borderTop: "1px solid #e9ecf3", lineHeight: 1.8
+      }}>
+        <div><b>DPDMS</b> — Rushinga Provincial Disaster Monitoring</div>
+        <div>Group Authors: Tinodaishe Mapangela · Sisilisiwe Ndhlovu · Nokutenda Zvenyika · Blessing Berejena · Elshama Chivete</div>
+        <div>University of Zimbabwe · HCS201 / HCC201 / HAI201 · 2026</div>
+      </footer>
   );
 }

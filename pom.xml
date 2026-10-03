@@ -5,6 +5,14 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
+    <developers>
+    <developer><name>Tinodaishe Mapangela</name><email>tinodamapangela@gmail.com</email><organization>University of Zimbabwe</organization></developer>
+    <developer><name>Sisilisiwe Ndhlovu</name><organization>University of Zimbabwe</organization></developer>
+    <developer><name>Nokutenda Zvenyika</name><organization>University of Zimbabwe</organization></developer>
+    <developer><name>Blessing Berejena</name><organization>University of Zimbabwe</organization></developer>
+    <developer><name>Elshama Chivete</name><organization>University of Zimbabwe</organization></developer>
+</developers>
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
